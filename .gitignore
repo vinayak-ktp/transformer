@@ -1,0 +1,5 @@
+*venv
+*.un~
+__pycache__
+
+struct
