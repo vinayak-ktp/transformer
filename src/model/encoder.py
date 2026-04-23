@@ -2,12 +2,14 @@ import torch
 from torch.functional import norm
 import torch.nn as nn
 
+from src.model.embeddings import TokenEmbedding
 from src.model.feed_forward import PositionwiseFeedForward
 from src.model.layer_norm import LayerNorm
 from src.model.multi_head_attention import MultiheadAttention
+from src.model.positional_encoding import PositionalEncoding
 
 
-class TransformerEncoder(nn.Module):
+class TransformerEncoderLayer(nn.Module):
     def __init__(self, embed_dim, num_heads, hidden_dim, dropout=0.1):
         super().__init__()
 
@@ -25,3 +27,38 @@ class TransformerEncoder(nn.Module):
 
         ffnet_out = self.ffnet(x)
         x = self.layer_norm2(x + self.dropout2(ffnet_out))
+
+
+class TransformerEncoder(nn.Module):
+    def __init__(
+        self,
+        num_layers,
+        vocab_size,
+        embed_dim,
+        num_heads,
+        hidden_dim,
+        dropout=0.1,
+        max_len=5000
+    ):
+        super().__init__()
+
+        self.token_embedding = TokenEmbedding(vocab_size, embed_dim)
+        self.positional_encoding = PositionalEncoding(embed_dim, max_len)
+
+        self.dropout = nn.Dropout(dropout)
+
+        self.layers = nn.ModuleList([
+            TransformerEncoderLayer(embed_dim, num_heads, hidden_dim, dropout)
+            for _ in range(num_layers)
+        ])
+
+    def forward(self, x, mask=None):
+        # x: (B, S)
+        x = self.token_embedding(x)         # (B, S, D)
+        x = self.positional_encoding(x)     # (B, S, D)
+        x = self.dropout(x)
+
+        for layer in self.layers:
+            x = layer(x, mask)
+
+        return x    # (B, S, D)
