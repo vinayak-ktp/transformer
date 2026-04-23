@@ -9,7 +9,7 @@ class PositionalEncoding(nn.Module):
 
         self.pe = torch.zeros(max_len, embed_dim)    # (S, D)
 
-        pos = torch.arange(0, max_len).unsqueeze(1)     # (S, 1)
+        pos = torch.arange(0, max_len).unsqueeze(1)  # (S, 1)
 
         # slow (???)
         # div = 1 / (10000 ** (torch.arange(0, embed_dim, 2) / embed_dim))    # (D/2)
