@@ -38,7 +38,7 @@ class TransformerDecoderLayer(nn.Module):
         tgt = self.layer_norm1(tgt + self.dropout1(attn_out))
 
         attn_out, _ = self.cross_attn(tgt, memory, memory, memory_mask)
-        memory = self.layer_norm2(memory + self.dropout2(attn_out))
+        tgt = self.layer_norm2(tgt + self.dropout2(attn_out))
 
         ffnet_out = self.ffnet(tgt)
         tgt = self.layer_norm3(tgt + self.dropout3(ffnet_out))

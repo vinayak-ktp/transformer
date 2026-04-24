@@ -20,19 +20,21 @@ class MultiheadAttention(nn.Module):
         self.attention = ScaledDotProductAttention()
 
     def forward(self, query, key, value, mask=None):
-        B, S, D = query.shape
+        B, q_len, D = query.shape
+        _, k_len, _ = key.shape
+        _, v_len, _ = value.shape
 
         Q = self.q_proj(query)
         K = self.k_proj(key)
         V = self.v_proj(value)
 
-        Q = Q.view(B, self.num_heads, S, self.head_dim)
-        K = K.view(B, self.num_heads, S, self.head_dim)
-        V = V.view(B, self.num_heads, S, self.head_dim)
+        Q = Q.view(B, self.num_heads, q_len, self.head_dim)
+        K = K.view(B, self.num_heads, k_len, self.head_dim)
+        V = V.view(B, self.num_heads, v_len, self.head_dim)
 
         out, attention_weights = self.attention(Q, K, V, mask)
 
-        out = out.view(B, S, D)
+        out = out.view(B, q_len, D)
         out = self.out_proj(out)
 
         return out, attention_weights

@@ -29,6 +29,8 @@ class TransformerEncoderLayer(nn.Module):
         ffnet_out = self.ffnet(src)
         src = self.layer_norm2(src + self.dropout2(ffnet_out))
 
+        return src
+
 
 class TransformerEncoder(nn.Module):
     def __init__(
