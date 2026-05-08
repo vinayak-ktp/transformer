@@ -1,5 +1,5 @@
-import torch
-import torch.nn as nn
+from src.model.masks import create_padding_mask, create_tgt_mask
+
 
 def train_one_epoch(model, dataloader, optimizer, criterion, device):
     model.train()
