@@ -2,7 +2,7 @@ import torch
 
 
 def generate_square_subsequent_mask(size):
-    mask = torch.tril(torch.ones(size, size))
+    mask = torch.tril(torch.ones(size, size, dtype=torch.bool))
     return mask
 
 
