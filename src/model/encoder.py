@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 
-from src.model.embeddings import TokenEmbedding
-from src.model.feed_forward import PositionwiseFeedForward
-from src.model.layer_norm import LayerNorm
-from src.model.multihead_attention import MultiheadAttention
-from src.model.positional_encoding import PositionalEncoding
+from src.model.layers.embeddings import TokenEmbedding
+from src.model.layers.feed_forward import PositionwiseFeedForward
+from src.model.layers.layer_norm import LayerNorm
+from src.model.layers.multihead_attention import MultiheadAttention
+from src.model.layers.positional_encoding import PositionalEncoding
 
 
 class TransformerEncoderLayer(nn.Module):

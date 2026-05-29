@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from src.model.attention import ScaledDotProductAttention
+from src.model.layers.attention import ScaledDotProductAttention
 
 
 class MultiheadAttention(nn.Module):
