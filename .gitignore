@@ -2,5 +2,7 @@
 *.un~
 __pycache__
 
-struct
 .pytest_cache/
+checkpoints/
+
+struct
