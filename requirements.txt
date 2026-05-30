@@ -6,3 +6,4 @@ tqdm
 pyyaml
 scikit-learn
 pytest
+sentencepiece

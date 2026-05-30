@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 
 from src.data.dataloader import collate_fn
 from src.data.dataset import TranslationDataset
-from src.data.vocab import Vocabulary
+from src.data.tokenizer import train_sentencepiece_tokenizer
 from src.model.transformer import Transformer
 from src.training.checkpoint import save_checkpoint
 from src.training.scheduler import TransformerLRScheduler
@@ -38,22 +38,22 @@ def main():
         "salut",
     ]
 
-    src_vocab = Vocabulary(min_freq=1)
-    tgt_vocab = Vocabulary(min_freq=1)
-
-    src_vocab.build_vocab(
-        [s.split() for s in src_sentences]
+    src_tokenizer = train_sentencepiece_tokenizer(
+        src_sentences,
+        model_prefix="tokenizers/toy_src",
+        vocab_size=64,
     )
-
-    tgt_vocab.build_vocab(
-        [s.split() for s in tgt_sentences]
+    tgt_tokenizer = train_sentencepiece_tokenizer(
+        tgt_sentences,
+        model_prefix="tokenizers/toy_tgt",
+        vocab_size=64,
     )
 
     dataset = TranslationDataset(
         src_sentences,
         tgt_sentences,
-        src_vocab,
-        tgt_vocab,
+        src_tokenizer,
+        tgt_tokenizer,
     )
 
     dataloader = DataLoader(
@@ -66,8 +66,8 @@ def main():
     embed_dim = 128
 
     model = Transformer(
-        src_vocab_size=len(src_vocab.token_to_idx),
-        tgt_vocab_size=len(tgt_vocab.token_to_idx),
+        src_vocab_size=len(src_tokenizer),
+        tgt_vocab_size=len(tgt_tokenizer),
         num_layers=2,
         embed_dim=embed_dim,
         num_heads=4,

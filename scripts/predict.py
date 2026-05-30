@@ -8,7 +8,7 @@ def predict(
     src_tensor,
     sos_idx,
     eos_idx,
-    tgt_vocab,
+    tgt_tokenizer,
     device,
 ):
 
@@ -21,11 +21,15 @@ def predict(
         device=device,
     )
 
+    token_ids = ids.squeeze().tolist()
+    if hasattr(tgt_tokenizer, "decode"):
+        return tgt_tokenizer.decode(token_ids)
+
     tokens = []
 
-    for idx in ids.squeeze().tolist():
+    for idx in token_ids:
 
-        token = tgt_vocab.idx_to_token[idx]
+        token = tgt_tokenizer.idx_to_token[idx]
 
         if token in (
             "<SOS>",
