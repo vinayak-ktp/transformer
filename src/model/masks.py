@@ -1,19 +1,34 @@
 import torch
 
 
-def generate_square_subsequent_mask(size):
-    mask = torch.tril(torch.ones(size, size, dtype=torch.bool))
-    return mask
+def create_padding_mask(sequence, pad_idx=0):
+    return (sequence != pad_idx).unsqueeze(1).unsqueeze(2)
 
 
-def create_padding_mask(seq, pad_idx=0):
-    return (seq != pad_idx).unsqueeze(1).unsqueeze(2)   # (B, 1, 1, S)
+def create_causal_mask(seq_len, device=None):
+    mask = torch.tril(
+        torch.ones(
+            seq_len,
+            seq_len,
+            dtype=torch.bool,
+            device=device
+        )
+    )
+
+    return mask.unsqueeze(0).unsqueeze(0)
 
 
 def create_tgt_mask(tgt, pad_idx=0):
-    B, T = tgt.shape
+    _, seq_len = tgt.shape
 
-    pad_mask = create_padding_mask(tgt, pad_idx)
-    subsequent_mask = generate_square_subsequent_mask(T).to(tgt.device)
+    padding_mask = create_padding_mask(
+        tgt,
+        pad_idx
+    )
 
-    return pad_mask & subsequent_mask
+    causal_mask = create_causal_mask(
+        seq_len,
+        tgt.device
+    )
+
+    return padding_mask & causal_mask

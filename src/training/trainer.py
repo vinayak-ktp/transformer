@@ -1,7 +1,7 @@
 from src.model.masks import create_padding_mask, create_tgt_mask
 
 
-def train_one_epoch(model, dataloader, optimizer, criterion, device):
+def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler=None):
     model.train()
 
     total_loss = 0
@@ -31,6 +31,9 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device):
 
         optimizer.zero_grad()
         loss.backward()
+        if scheduler is not None:
+            scheduler.step()
+
         optimizer.step()
 
         total_loss += loss.item()

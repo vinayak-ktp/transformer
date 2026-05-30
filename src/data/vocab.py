@@ -19,7 +19,7 @@ class Vocabulary:
         counter = Counter()
 
         for sentence in sentences:
-            counter.update(sentence.split())
+            counter.update(self._tokenize(sentence))
 
         vocab = self.special_tokens.copy()
 
@@ -38,9 +38,15 @@ class Vocabulary:
         }
 
     def numericalize(self, sentence):
-        tokens = sentence.split()
+        tokens = self._tokenize(sentence)
 
         return [
             self.token_to_idx.get(token, self.token_to_idx["<UNK>"])
             for token in tokens
         ]
+
+    def _tokenize(self, sentence):
+        if isinstance(sentence, str):
+            return sentence.split()
+
+        return list(sentence)

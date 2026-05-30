@@ -37,6 +37,8 @@ class Transformer(nn.Module):
         )
 
         self.fc = nn.Linear(embed_dim, tgt_vocab_size)
+        # weight tying
+        self.fc.weight = self.decoder.token_embedding.weight
 
     def forward(
         self,

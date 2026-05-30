@@ -1,0 +1,7 @@
+min_freq: 2
+
+special_tokens:
+  pad: "<PAD>"
+  sos: "<SOS>"
+  eos: "<EOS>"
+  unk: "<UNK>"

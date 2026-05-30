@@ -14,6 +14,8 @@ def greedy_decode(
     model.eval()
 
     src = src.to(device)
+    if src.dim() == 1:
+        src = src.unsqueeze(0)
 
     src_mask = create_padding_mask(src)
 
@@ -32,10 +34,9 @@ def greedy_decode(
                 tgt_mask=tgt_mask
             )
 
-            logits = model.fc_out(out)
+            logits = model.fc(out)
 
         next_token = logits[:, -1, :].argmax(dim=-1).item()
-
         next_token_tensor = torch.tensor([[next_token]], device=device)
 
         ys = torch.cat([ys, next_token_tensor], dim=1)
