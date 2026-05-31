@@ -1,9 +1,15 @@
-min_freq: 2
+data_path: data/manythings/fra.txt
+max_pairs: 30000
+max_src_len: 20
+max_tgt_len: 20
+val_ratio: 0.1
+
 tokenizer: sentencepiece
 tokenizer_model_type: bpe
-tokenizer_vocab_size: 32000
-src_tokenizer_prefix: tokenizers/src
-tgt_tokenizer_prefix: tokenizers/tgt
+tokenizer_vocab_size: 8000
+tokenizer_prefix: tokenizers/fra_shared
+
+bleu_eval_samples: 500
 
 special_tokens:
   pad: "<PAD>"

@@ -37,7 +37,7 @@ class SentencePieceTokenizer:
     def unk_id(self):
         return self.processor.unk_id()
 
-    def numericalize(self, sentence):
+    def encode(self, sentence):
         if isinstance(sentence, str):
             return self.processor.encode(sentence, out_type=int)
 

@@ -23,13 +23,13 @@ class TranslationDataset(Dataset):
         src_sentence = self.src_sentences[idx]
         tgt_sentence = self.tgt_sentences[idx]
 
-        src_tokens = self.src_tokenizer.numericalize(src_sentence)
+        src_tokens = self.src_tokenizer.encode(src_sentence)
 
         tgt_tokens = [
             self.tgt_tokenizer.token_to_idx["<SOS>"]
         ]
 
-        tgt_tokens += self.tgt_tokenizer.numericalize(tgt_sentence)
+        tgt_tokens += self.tgt_tokenizer.encode(tgt_sentence)
 
         tgt_tokens += [
             self.tgt_tokenizer.token_to_idx["<EOS>"]

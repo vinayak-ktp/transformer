@@ -37,7 +37,7 @@ class Vocabulary:
             for token, idx in self.token_to_idx.items()
         }
 
-    def numericalize(self, sentence):
+    def encode(self, sentence):
         tokens = self._tokenize(sentence)
 
         return [

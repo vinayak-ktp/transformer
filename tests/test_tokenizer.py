@@ -19,7 +19,7 @@ def test_sentencepiece_tokenizer_trains_and_round_trips_text():
                 model_prefix=Path({str(Path(tmp_dir) / "toy")!r}),
                 vocab_size=32,
             )
-            token_ids = tokenizer.numericalize("hello ai")
+            token_ids = tokenizer.encode("hello ai")
 
             assert len(tokenizer) > 0
             assert tokenizer.pad_id == 0

@@ -1,9 +1,7 @@
 torch
 numpy
-pandas
-matplotlib
 tqdm
 pyyaml
-scikit-learn
-pytest
 sentencepiece
+sacrebleu
+pytest

@@ -35,7 +35,7 @@ def beam_search_decode(
 
             with torch.no_grad():
                 out = model.decoder(seq, memory, tgt_mask=tgt_mask)
-                logits = model.fc_out(out)
+                logits = model.fc(out)
 
             probs = F.log_softmax(logits[:, -1, :], dim=-1)
 
