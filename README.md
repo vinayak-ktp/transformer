@@ -1,6 +1,6 @@
 # Transformer (from-scratch Implementation)
 
-A from-scratch PyTorch implementation of the Transformer architecture (*Attention Is All You Need*, Vaswani et al. 2017), trained on the [ManyThings](https://www.manythings.org/anki/) English–French dataset for sequence-to-sequence translation.
+A from-scratch PyTorch implementation of the Transformer architecture (_Attention Is All You Need_, Vaswani et al. 2017), trained on the [ManyThings](https://www.manythings.org/anki/) English–French dataset for sequence-to-sequence translation.
 
 ---
 
@@ -99,13 +99,13 @@ flowchart TD
 
     dec_ff --> linear["Linear Projection\n(weights tied to target embedding)"]:::embed
     linear --> out(["Output Logits"]):::out
-    
+
     style ENCODER fill:#fafafa,stroke:#9e9e9e,stroke-width:2px,stroke-dasharray: 5 5,rx:10px,ry:10px
     style DECODER fill:#fafafa,stroke:#9e9e9e,stroke-width:2px,stroke-dasharray: 5 5,rx:10px,ry:10px
 ```
 
-
 **Key implementation details:**
+
 - **Weight tying** — the output projection layer shares weights with the target token embedding, reducing parameters and improving training stability.
 - **Scaled embeddings** — token embeddings are multiplied by `√embed_dim` before positional encoding is added.
 - **Custom LayerNorm** — implemented from scratch (pre-norm not used; post-norm as in the original paper).
@@ -121,7 +121,7 @@ cd transformer
 python -m venv venv
 source venv/bin/activate
 python install.py
-python -m scripts.download_data   # downloads data/manythings/fra.txt (~170K EN↔FR pairs)
+python -m scripts.download_data   # downloads data/manythings/fra.txt (~170K EN<>FR pairs)
 ```
 
 **Requirements:** `torch`, `sentencepiece`, `sacrebleu`, `numpy`, `pyyaml`, `tqdm`, `pytest`
@@ -137,29 +137,29 @@ All hyperparameters are controlled via three YAML files. Edit these before train
 ### `configs/data_config.yaml`
 
 ```yaml
-data_path: data/manythings/fra.txt   # path to the tab-separated dataset
-max_pairs: 30000                      # number of pairs to load from file
-max_src_len: 20                       # max tokenised source length (filter)
-max_tgt_len: 20                       # max tokenised target length (filter)
-val_ratio: 0.1                        # fraction of data held out for validation
+data_path: data/manythings/fra.txt # path to the tab-separated dataset
+max_pairs: 30000 # number of pairs to load from file
+max_src_len: 20 # max tokenised source length (filter)
+max_tgt_len: 20 # max tokenised target length (filter)
+val_ratio: 0.1 # fraction of data held out for validation
 
 tokenizer: sentencepiece
 tokenizer_model_type: bpe
-tokenizer_vocab_size: 8000            # BPE vocabulary size
-tokenizer_prefix: tokenizers/fra_shared  # where to save/load the tokenizer
+tokenizer_vocab_size: 8000 # BPE vocabulary size
+tokenizer_prefix: tokenizers/fra_shared # where to save/load the tokenizer
 
-bleu_eval_samples: 500                # val sentences decoded per epoch for BLEU
+bleu_eval_samples: 500 # val sentences decoded per epoch for BLEU
 ```
 
 ### `configs/model_config.yaml`
 
 ```yaml
-embed_dim: 256      # embedding / model dimension
-num_heads: 4        # attention heads (must divide embed_dim)
-hidden_dim: 512     # feed-forward inner dimension (typically 4× embed_dim)
-num_layers: 3       # number of encoder and decoder layers
+embed_dim: 256 # embedding / model dimension
+num_heads: 4 # attention heads (must divide embed_dim)
+hidden_dim: 512 # feed-forward inner dimension (typically 4× embed_dim)
+num_layers: 3 # number of encoder and decoder layers
 dropout: 0.1
-max_len: 5000       # maximum positional encoding length
+max_len: 5000 # maximum positional encoding length
 ```
 
 ### `configs/train_config.yaml`
@@ -167,16 +167,16 @@ max_len: 5000       # maximum positional encoding length
 ```yaml
 batch_size: 64
 epochs: 50
-warmup_steps: 500       # LR warmup steps (keep small for small datasets)
-scheduler_factor: 1.0   # scales the peak LR
+warmup_steps: 500 # LR warmup steps (keep small for small datasets)
+scheduler_factor: 1.0 # scales the peak LR
 
 label_smoothing: 0.1
 gradient_clip: 1.0
 weight_decay: 0.0
 
-save_every: 5           # save a periodic checkpoint every N epochs
+save_every: 5 # save a periodic checkpoint every N epochs
 seed: 42
-device: cuda            # falls back to cpu automatically if CUDA unavailable
+device: cuda # falls back to cpu automatically if CUDA unavailable
 ```
 
 > **Warmup tip:** `warmup_steps` should be proportional to dataset size. For 27K training pairs at batch_size=64, ~422 steps/epoch — so `warmup_steps: 500` means peak LR is reached after roughly epoch 1, which is appropriate. The original paper's value of 4000 is designed for datasets 10× larger.
@@ -192,6 +192,7 @@ python -m scripts.train
 ```
 
 The script will:
+
 1. Load and filter the dataset from `data_config.yaml`
 2. Train (or load) a shared BPE tokenizer and save it to `tokenizers/`
 3. Train the model, printing a per-epoch table of train loss, val loss, and corpus BLEU
@@ -200,6 +201,7 @@ The script will:
 6. Print sample translations from the best checkpoint at the end
 
 **Example output:**
+
 ```
 Using device: cpu
 
@@ -229,6 +231,14 @@ A minimal script that trains on 5 hard-coded sentence pairs — useful for quick
 python -m scripts.train_toy
 ```
 
+### Test the architecture
+
+Testing all the components and the full Transformer architecture:
+
+```bash
+python -m pytest tests
+```
+
 ---
 
 ## Inference
@@ -250,6 +260,7 @@ python -m scripts.predict "How are you?" --mode beam --beam-width 4
 ```bash
 python -m scripts.predict "I love you." --checkpoint epoch_20
 ```
+
 Checkpoints are resolved as `checkpoints/<name>.pt` automatically — no path or extension needed.
 
 ### Interactive mode
@@ -270,19 +281,20 @@ python -m scripts.predict
 
 **All CLI options:**
 
-| Flag | Default | Description |
-|---|---|---|
-| `sentence` | *(none)* | Sentence to translate; omit for interactive mode |
-| `--checkpoint` | `best` | Checkpoint name under `checkpoints/` |
-| `--mode` | `greedy` | Decoding strategy: `greedy` or `beam` |
-| `--beam-width` | `4` | Beam width (only used with `--mode beam`) |
-| `--max-len` | `50` | Maximum output sequence length |
+| Flag           | Default  | Description                                      |
+| -------------- | -------- | ------------------------------------------------ |
+| `sentence`     | _(none)_ | Sentence to translate; omit for interactive mode |
+| `--checkpoint` | `best`   | Checkpoint name under `checkpoints/`             |
+| `--mode`       | `greedy` | Decoding strategy: `greedy` or `beam`            |
+| `--beam-width` | `4`      | Beam width (only used with `--mode beam`)        |
+| `--max-len`    | `50`     | Maximum output sequence length                   |
 
 ---
 
 ## How the Code Flows
 
 ### Training
+
 ```
 train.py
   └── load_pairs()              reads fra.txt, tab-splits into EN / FR lists
@@ -301,6 +313,7 @@ train.py
 ```
 
 ### Inference (greedy)
+
 ```
 greedy_decode(model, src, sos_idx, eos_idx, max_len, device)
   └── encoder.forward(src, src_mask)   → memory  (one pass, cached)
@@ -313,6 +326,7 @@ greedy_decode(model, src, sos_idx, eos_idx, max_len, device)
 ```
 
 ### Inference (beam search)
+
 Same encoder pass, but the loop maintains the top-K candidate sequences ranked by cumulative log-probability, expanding each by `beam_width` tokens per step.
 
 ---
@@ -329,11 +343,11 @@ Tests cover masks, attention, encoder/decoder shapes, the LR scheduler, and toke
 
 ## Improving Translation Quality
 
-| Change | Impact | Config key |
-|---|---|---|
-| Train more epochs | High | `epochs` |
-| Reduce `warmup_steps` to match dataset size | High | `warmup_steps` |
-| Use more data (`max_pairs`) | High | `max_pairs` |
-| Increase model size (`embed_dim`, `num_layers`) | Medium (needs GPU) | `model_config.yaml` |
-| Use beam search at inference | Low–Medium | `--mode beam` |
-| Allow longer sentences (`max_src_len`, `max_tgt_len`) | Medium | `data_config.yaml` |
+| Change                                                | Impact             | Config key          |
+| ----------------------------------------------------- | ------------------ | ------------------- |
+| Train more epochs                                     | High               | `epochs`            |
+| Reduce `warmup_steps` to match dataset size           | High               | `warmup_steps`      |
+| Use more data (`max_pairs`)                           | High               | `max_pairs`         |
+| Increase model size (`embed_dim`, `num_layers`)       | Medium (needs GPU) | `model_config.yaml` |
+| Use beam search at inference                          | Low–Medium         | `--mode beam`       |
+| Allow longer sentences (`max_src_len`, `max_tgt_len`) | Medium             | `data_config.yaml`  |
