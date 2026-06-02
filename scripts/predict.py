@@ -104,7 +104,7 @@ def main():
                 print("Exiting.")
                 break
             result = translate(model, sentence, tokenizer, device, args.mode, args.beam_width, args.max_len)
-            print(f"FR > {result}\n")
+            print(f"FR > {result}\n\n")
 
 
 if __name__ == "__main__":

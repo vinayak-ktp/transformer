@@ -5,7 +5,6 @@ from pathlib import Path
 
 from src.utils.config import load_config
 
-
 DATA_URL = "https://www.manythings.org/anki/fra-eng.zip"
 
 

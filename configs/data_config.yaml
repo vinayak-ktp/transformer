@@ -1,5 +1,5 @@
 data_path: data/manythings/fra.txt
-max_pairs: 30000
+max_pairs: 150000
 max_src_len: 20
 max_tgt_len: 20
 val_ratio: 0.1

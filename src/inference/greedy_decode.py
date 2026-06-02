@@ -31,7 +31,8 @@ def greedy_decode(
             out = model.decoder(
                 ys,
                 memory,
-                tgt_mask=tgt_mask
+                tgt_mask=tgt_mask,
+                memory_mask=src_mask,
             )
 
             logits = model.fc(out)

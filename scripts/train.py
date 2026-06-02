@@ -2,12 +2,12 @@ import random
 from functools import partial
 from pathlib import Path
 
-# pyrefly: ignore [missing-import]
 import sacrebleu
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+from scripts.download_data import download_data
 from src.data.dataloader import collate_fn
 from src.data.dataset import TranslationDataset
 from src.data.tokenizer import SentencePieceTokenizer, train_sentencepiece_tokenizer
@@ -19,7 +19,6 @@ from src.training.scheduler import TransformerLRScheduler
 from src.training.trainer import train_one_epoch
 from src.utils.config import load_config
 from src.utils.seed import set_seed
-from scripts.download_data import download_data
 
 
 def load_pairs(path, max_pairs):
@@ -39,10 +38,32 @@ def load_pairs(path, max_pairs):
 def filter_by_length(src_list, tgt_list, tokenizer, max_src, max_tgt):
     filtered_src, filtered_tgt = [], []
     for s, t in zip(src_list, tgt_list):
-        if len(tokenizer.encode(s)) <= max_src and len(tokenizer.encode(t)) <= max_tgt:
+        # tgt in the dataset gets SOS + tokens + EOS, so reserve 2 slots
+        if len(tokenizer.encode(s)) <= max_src and len(tokenizer.encode(t)) <= max_tgt - 2:
             filtered_src.append(s)
             filtered_tgt.append(t)
     return filtered_src, filtered_tgt
+
+
+def deduplicate_pairs(src_list, tgt_list, seed=42):
+    """Keep one randomly-chosen French translation per English sentence.
+
+    ManyThings maps the same EN sentence to many FR variants (formal/informal,
+    gendered, regional). Without deduplication, 57% of training pairs are
+    contradictory (same src, different tgt), which floors the loss at the
+    entropy of the target distribution and prevents convergence.
+    """
+    from collections import defaultdict
+    import random
+    rng = random.Random(seed)
+    groups = defaultdict(list)
+    for s, t in zip(src_list, tgt_list):
+        groups[s].append(t)
+    deduped_src, deduped_tgt = [], []
+    for s, targets in groups.items():
+        deduped_src.append(s)
+        deduped_tgt.append(rng.choice(targets))
+    return deduped_src, deduped_tgt
 
 
 def train_val_split(src, tgt, val_ratio=0.1, seed=42):
@@ -68,7 +89,7 @@ def compute_val_loss(model, dataloader, criterion, device):
             tgt_output = tgt[:, 1:]
             src_mask = create_padding_mask(src)
             tgt_mask = create_tgt_mask(tgt_input)
-            logits = model(src, tgt_input, src_mask=src_mask, tgt_mask=tgt_mask)
+            logits = model(src, tgt_input, src_mask=src_mask, tgt_mask=tgt_mask, memory_mask=src_mask)
             logits = logits.reshape(-1, logits.shape[-1])
             tgt_output = tgt_output.reshape(-1)
             loss = criterion(logits, tgt_output)
@@ -137,6 +158,10 @@ def main():
     print(f"\nLoading up to {max_pairs:,} pairs from {data_path} …")
     src_raw, tgt_raw = load_pairs(data_path, max_pairs)
     print(f"  Loaded {len(src_raw):,} pairs")
+
+    # Deduplicate: keep one FR translation per EN sentence
+    src_raw, tgt_raw = deduplicate_pairs(src_raw, tgt_raw, seed=seed)
+    print(f"  After deduplication: {len(src_raw):,} unique pairs")
 
     # Train shared BPE tokenizer
     tokenizer_prefix = data_cfg["tokenizer_prefix"]
@@ -234,7 +259,8 @@ def main():
 
     for epoch in range(1, epochs + 1):
         train_loss = train_one_epoch(
-            model, train_loader, optimizer, criterion, device, scheduler=scheduler
+            model, train_loader, optimizer, criterion, device,
+            scheduler=scheduler, grad_clip=train_cfg.get("gradient_clip", 1.0),
         )
 
         val_loss = compute_val_loss(model, val_loader, criterion, device)

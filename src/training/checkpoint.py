@@ -1,5 +1,6 @@
-import torch
 from pathlib import Path
+
+import torch
 
 
 def save_checkpoint(model, optimizer, epoch, loss, path, scheduler=None):

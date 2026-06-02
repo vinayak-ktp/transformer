@@ -1,7 +1,9 @@
+import torch.nn as nn
+
 from src.model.masks import create_padding_mask, create_tgt_mask
 
 
-def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler=None):
+def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler=None, grad_clip=1.0):
     model.train()
 
     total_loss = 0
@@ -21,7 +23,8 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler=N
             src,
             tgt_input,
             src_mask=src_mask,
-            tgt_mask=tgt_mask
+            tgt_mask=tgt_mask,
+            memory_mask=src_mask,
         )
 
         logits = logits.reshape(-1, logits.shape[-1])
@@ -31,10 +34,14 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler=N
 
         optimizer.zero_grad()
         loss.backward()
-        if scheduler is not None:
-            scheduler.step()
+
+        if grad_clip is not None and grad_clip > 0:
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
 
         optimizer.step()
+
+        if scheduler is not None:
+            scheduler.step()
 
         total_loss += loss.item()
 
