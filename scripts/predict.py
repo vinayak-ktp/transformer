@@ -52,7 +52,7 @@ def translate(model, sentence, tokenizer, device, mode, beam_width, max_len):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Translate English to French.")
+    parser = argparse.ArgumentParser(description="Translate English to Hinglish.")
     parser.add_argument("sentence", nargs="?", help="Sentence to translate. Omit for interactive mode.")
     parser.add_argument("--checkpoint", default="best", help="Checkpoint name under checkpoints/ (e.g. best, epoch_20).")
     parser.add_argument("--mode", choices=["greedy", "beam"], default="greedy", help="Decoding strategy.")

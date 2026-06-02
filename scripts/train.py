@@ -307,14 +307,14 @@ def main():
     model.eval()
 
     samples = [
-        "Go.",
-        "Hello!",
-        "Thank you.",
-        "I love you.",
+        "What is your name?",
         "How are you?",
         "I don't know.",
-        "She is very kind.",
-        "We need to talk.",
+        "What kind of movie is it?",
+        "That was a great film.",
+        "Can you help me?",
+        "I love this song.",
+        "Where are you going?",
     ]
 
     sos_idx = tokenizer.sos_id
@@ -333,7 +333,7 @@ def main():
                 device=device,
             )
             hyp = tokenizer.decode(output_ids.squeeze().tolist())
-            print(f"  EN: {sent!r:30s}  →  FR: {hyp!r}")
+            print(f"  EN: {sent!r:30s}  →  Hinglish: {hyp!r}")
 
 
 if __name__ == "__main__":

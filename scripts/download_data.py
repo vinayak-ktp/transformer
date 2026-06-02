@@ -1,11 +1,9 @@
-import shutil
-import urllib.request
-import zipfile
 from pathlib import Path
 
 from src.utils.config import load_config
 
-DATA_URL = "https://www.manythings.org/anki/fra-eng.zip"
+
+DATASET_REPO = "findnitai/english-to-hinglish"
 
 
 def download_data(data_path):
@@ -15,32 +13,27 @@ def download_data(data_path):
         return
 
     dest.parent.mkdir(parents=True, exist_ok=True)
-    zip_path = dest.parent / "fra-eng.zip"
 
-    print(f"Downloading {DATA_URL} ...")
-    with urllib.request.urlopen(DATA_URL) as response, open(zip_path, "wb") as f:
-        total = int(response.headers.get("Content-Length", 0))
-        downloaded = 0
-        chunk = 8192
-        while True:
-            buf = response.read(chunk)
-            if not buf:
-                break
-            f.write(buf)
-            downloaded += len(buf)
-            if total:
-                pct = downloaded / total * 100
-                print(f"\r  {pct:.1f}%  ({downloaded:,} / {total:,} bytes)", end="", flush=True)
-    print()
+    try:
+        from datasets import load_dataset
+    except ImportError as exc:
+        raise ImportError(
+            "The `datasets` package is required to download the Hinglish dataset. "
+            "Install it with: pip install datasets"
+        ) from exc
 
-    print(f"Extracting to {dest.parent} ...")
-    with zipfile.ZipFile(zip_path, "r") as zf:
-        for member in zf.namelist():
-            if member.endswith("fra.txt"):
-                with zf.open(member) as src, open(dest, "wb") as out:
-                    shutil.copyfileobj(src, out)
-                break
-    zip_path.unlink()
+    print(f"Downloading {DATASET_REPO} from HuggingFace …")
+    ds = load_dataset(DATASET_REPO, split="train")
+    print(f"  Downloaded {len(ds):,} rows. Writing to {dest} …")
+
+    with open(dest, "w", encoding="utf-8") as f:
+        for row in ds:
+            en = " ".join(row["translation"]["en"].split())
+            hi_ng = " ".join(row["translation"]["hi_ng"].split())
+            # Skip rows where either side is empty
+            if not en or not hi_ng:
+                continue
+            f.write(f"{en}\t{hi_ng}\n")
 
     lines = sum(1 for _ in open(dest, encoding="utf-8"))
     print(f"Done. {dest} — {lines:,} sentence pairs.")

@@ -1,13 +1,13 @@
-data_path: data/manythings/fra.txt
-max_pairs: 150000
-max_src_len: 20
-max_tgt_len: 20
+data_path: data/hinglish/en_hinglish.tsv
+max_pairs: 189102
+max_src_len: 30
+max_tgt_len: 30
 val_ratio: 0.1
 
 tokenizer: sentencepiece
 tokenizer_model_type: bpe
 tokenizer_vocab_size: 8000
-tokenizer_prefix: tokenizers/fra_shared
+tokenizer_prefix: tokenizers/hinglish_shared
 
 bleu_eval_samples: 500
 

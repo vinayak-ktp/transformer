@@ -4,4 +4,5 @@ tqdm
 pyyaml
 sentencepiece
 sacrebleu
+datasets
 pytest
