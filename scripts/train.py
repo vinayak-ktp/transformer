@@ -232,7 +232,10 @@ def main():
     print(f"\nModel parameters: {num_params:,}")
 
     # Optimizer, scheduler, criterion
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0, betas=(0.9, 0.98), eps=1e-9)
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=0.0, betas=(0.9, 0.98), eps=1e-9,
+        weight_decay=train_cfg.get("weight_decay", 0.01),
+    )
     scheduler = TransformerLRScheduler(
         optimizer,
         embed_dim=embed_dim,

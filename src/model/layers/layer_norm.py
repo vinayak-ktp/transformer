@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class LayerNorm(nn.Module):
-    def __init__(self, norm_shape, eps=0.01):
+    def __init__(self, norm_shape, eps=1e-5):
         super().__init__()
 
         self.eps = eps

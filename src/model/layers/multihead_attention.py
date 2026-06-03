@@ -28,13 +28,13 @@ class MultiheadAttention(nn.Module):
         K = self.k_proj(key)
         V = self.v_proj(value)
 
-        Q = Q.view(B, self.num_heads, q_len, self.head_dim)
-        K = K.view(B, self.num_heads, k_len, self.head_dim)
-        V = V.view(B, self.num_heads, v_len, self.head_dim)
+        Q = Q.view(B, q_len, self.num_heads, self.head_dim).transpose(1, 2)
+        K = K.view(B, k_len, self.num_heads, self.head_dim).transpose(1, 2)
+        V = V.view(B, v_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         out, attention_weights = self.attention(Q, K, V, mask)
 
-        out = out.view(B, q_len, D)
+        out = out.transpose(1, 2).contiguous().view(B, q_len, D)
         out = self.out_proj(out)
 
         return out, attention_weights

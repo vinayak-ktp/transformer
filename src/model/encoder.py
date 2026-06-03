@@ -18,7 +18,7 @@ class TransformerEncoderLayer(nn.Module):
         self.dropout1 = nn.Dropout(dropout)
 
         # FeedForward Network
-        self.ffnet = PositionwiseFeedForward(embed_dim, hidden_dim)
+        self.ffnet = PositionwiseFeedForward(embed_dim, hidden_dim, dropout)
         self.layer_norm2 = LayerNorm(embed_dim)
         self.dropout2 = nn.Dropout(dropout)
 

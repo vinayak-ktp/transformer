@@ -1,12 +1,12 @@
 data_path: data/hinglish/en_hinglish.tsv
 max_pairs: 189102
-max_src_len: 30
-max_tgt_len: 30
+max_src_len: 50
+max_tgt_len: 50
 val_ratio: 0.1
 
 tokenizer: sentencepiece
 tokenizer_model_type: bpe
-tokenizer_vocab_size: 8000
+tokenizer_vocab_size: 16000
 tokenizer_prefix: tokenizers/hinglish_shared
 
 bleu_eval_samples: 500
