@@ -14,6 +14,7 @@ class TokenEmbedding(nn.Module):
         # self.weight = nn.Parameter(torch.randn(vocab_size, embed_dim))
 
         self.embedding = nn.Embedding(vocab_size, embed_dim)
+        nn.init.normal_(self.embedding.weight, mean=0.0, std=embed_dim ** -0.5)
         self.weight = self.embedding.weight
 
     def forward(self, x):
