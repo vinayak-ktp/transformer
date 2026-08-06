@@ -246,6 +246,7 @@ def main():
         ignore_index=tokenizer.pad_id,
         label_smoothing=train_cfg["label_smoothing"],
     )
+    val_criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_id)
 
     # Training loop
     epochs = train_cfg["epochs"]
@@ -266,7 +267,7 @@ def main():
             scheduler=scheduler, grad_clip=train_cfg.get("gradient_clip", 1.0),
         )
 
-        val_loss = compute_val_loss(model, val_loader, criterion, device)
+        val_loss = compute_val_loss(model, val_loader, val_criterion, device)
 
         bleu = compute_bleu(
             model, val_src, val_tgt, tokenizer, device,
