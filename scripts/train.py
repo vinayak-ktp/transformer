@@ -97,7 +97,7 @@ def compute_val_loss(model, dataloader, criterion, device):
     return total_loss / len(dataloader)
 
 
-def compute_bleu(model, val_src, val_tgt, tokenizer, device, max_len, num_samples, seed):
+def compute_metrics(model, val_src, val_tgt, tokenizer, device, max_len, num_samples, seed):
     model.eval()
 
     indices = list(range(len(val_src)))
@@ -132,7 +132,8 @@ def compute_bleu(model, val_src, val_tgt, tokenizer, device, max_len, num_sample
             references.append(val_tgt[idx])
 
     bleu = sacrebleu.corpus_bleu(hypotheses, [references])
-    return bleu.score
+    chrf = sacrebleu.corpus_chrf(hypotheses, [references])
+    return bleu.score, chrf.score
 
 
 def main():
@@ -268,7 +269,7 @@ def main():
     best_epoch = 0
 
     print(f"\n{'─'*70}")
-    print(f"{'Epoch':>6}  {'Train Loss':>10}  {'Val Loss':>9}  {'BLEU':>7}")
+    print(f"{'Epoch':>6}  {'Train Loss':>10}  {'Val Loss':>9}  {'BLEU':>7}  {'chrF':>7}")
     print(f"{'─'*70}")
 
     for epoch in range(1, epochs + 1):
@@ -279,7 +280,7 @@ def main():
 
         val_loss = compute_val_loss(model, val_loader, val_criterion, device)
 
-        bleu = compute_bleu(
+        bleu, chrf = compute_metrics(
             model, val_src, val_tgt, tokenizer, device,
             max_len=max_decode_len,
             num_samples=bleu_eval_samples,
@@ -304,7 +305,7 @@ def main():
             )
 
         marker = " ←" if is_best else ""
-        print(f"{epoch:>6}  {train_loss:>10.4f}  {val_loss:>9.4f}  {bleu:>7.2f}{marker}")
+        print(f"{epoch:>6}  {train_loss:>10.4f}  {val_loss:>9.4f}  {bleu:>7.2f}  {chrf:>7.2f}{marker}")
 
     print(f"{'─'*70}")
     print(f"\nTraining complete. Best BLEU: {best_bleu:.2f} at epoch {best_epoch}.")
