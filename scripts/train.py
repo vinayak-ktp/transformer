@@ -232,9 +232,19 @@ def main():
     print(f"\nModel parameters: {num_params:,}")
 
     # Optimizer, scheduler, criterion
+    decay_params, no_decay_params = [], []
+    for name, param in model.named_parameters():
+        if param.dim() < 2 or "token_embedding" in name:
+            no_decay_params.append(param)
+        else:
+            decay_params.append(param)
+
     optimizer = torch.optim.AdamW(
-        model.parameters(), lr=0.0, betas=(0.9, 0.98), eps=1e-9,
-        weight_decay=train_cfg.get("weight_decay", 0.01),
+        [
+            {"params": decay_params, "weight_decay": train_cfg.get("weight_decay", 0.01)},
+            {"params": no_decay_params, "weight_decay": 0.0},
+        ],
+        lr=0.0, betas=(0.9, 0.98), eps=1e-9,
     )
     scheduler = TransformerLRScheduler(
         optimizer,
