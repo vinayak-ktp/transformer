@@ -40,6 +40,9 @@ class Transformer(nn.Module):
         # weight tying
         self.fc.weight = self.decoder.token_embedding.weight
 
+        if src_vocab_size == tgt_vocab_size:
+            self.encoder.token_embedding = self.decoder.token_embedding
+
     def forward(
         self,
         src,
