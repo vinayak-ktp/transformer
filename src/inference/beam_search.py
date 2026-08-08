@@ -11,7 +11,8 @@ def beam_search_decode(
     eos_idx,
     max_len,
     beam_width,
-    device
+    device,
+    length_penalty=0.6
 ):
     model.eval()
 
@@ -34,7 +35,12 @@ def beam_search_decode(
             tgt_mask = create_tgt_mask(seq)
 
             with torch.no_grad():
-                out = model.decoder(seq, memory, tgt_mask=tgt_mask)
+                out = model.decoder(
+                    seq,
+                    memory,
+                    tgt_mask=tgt_mask,
+                    memory_mask=src_mask,
+                )
                 logits = model.fc(out)
 
             probs = F.log_softmax(logits[:, -1, :], dim=-1)
@@ -49,7 +55,11 @@ def beam_search_decode(
                 candidate_score = score + topk_probs[:, i].item()
                 all_candidates.append((candidate, candidate_score))
 
-        ordered = sorted(all_candidates, key=lambda x: x[1], reverse=True)
+        ordered = sorted(
+            all_candidates,
+            key=lambda x: x[1] / (x[0].shape[1] ** length_penalty),
+            reverse=True
+        )
         sequences = ordered[:beam_width]
 
     return sequences[0][0]
