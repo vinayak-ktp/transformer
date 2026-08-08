@@ -9,7 +9,7 @@ tokenizer_model_type: bpe
 tokenizer_vocab_size: 16000
 tokenizer_prefix: tokenizers/hinglish_shared
 
-bleu_eval_samples: 500
+bleu_eval_samples: 2000
 
 special_tokens:
   pad: "<PAD>"
