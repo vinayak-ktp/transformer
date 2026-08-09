@@ -106,8 +106,8 @@ flowchart TD
 
 **Key implementation details:**
 
-- **Weight tying** — the output projection layer shares weights with the target token embedding, reducing parameters and improving training stability.
-- **Scaled embeddings** — token embeddings are multiplied by `√embed_dim` before positional encoding is added.
+- **Weight tying** — the output projection layer shares weights with the target token embedding, reducing parameters and improving training stability. When source and target share a vocabulary, the encoder embedding is tied as well.
+- **Scaled embeddings** — token embeddings are initialised with `std = 1/√embed_dim` and multiplied by `√embed_dim` before positional encoding is added, so they start on the same scale as the positional encoding.
 - **Custom LayerNorm** — implemented from scratch (pre-norm not used; post-norm as in the original paper).
 - **Causal mask** — a lower-triangular boolean mask prevents the decoder from attending to future positions.
 
@@ -148,16 +148,16 @@ tokenizer_model_type: bpe
 tokenizer_vocab_size: 8000 # BPE vocabulary size
 tokenizer_prefix: tokenizers/fra_shared # where to save/load the tokenizer
 
-bleu_eval_samples: 500 # val sentences decoded per epoch for BLEU
+bleu_eval_samples: 2000 # val sentences decoded per epoch for BLEU / chrF
 ```
 
 ### `configs/model_config.yaml`
 
 ```yaml
-embed_dim: 256 # embedding / model dimension
-num_heads: 4 # attention heads (must divide embed_dim)
-hidden_dim: 512 # feed-forward inner dimension (typically 4× embed_dim)
-num_layers: 3 # number of encoder and decoder layers
+embed_dim: 512 # embedding / model dimension
+num_heads: 8 # attention heads (must divide embed_dim)
+hidden_dim: 2048 # feed-forward inner dimension (typically 4× embed_dim)
+num_layers: 6 # number of encoder and decoder layers
 dropout: 0.1
 max_len: 5000 # maximum positional encoding length
 ```
@@ -172,7 +172,7 @@ scheduler_factor: 1.0 # scales the peak LR
 
 label_smoothing: 0.1
 gradient_clip: 1.0
-weight_decay: 0.0
+weight_decay: 0.01 # not applied to LayerNorm params, biases or embeddings
 
 save_every: 5 # save a periodic checkpoint every N epochs
 seed: 42
@@ -195,7 +195,7 @@ The script will:
 
 1. Load and filter the dataset from `data_config.yaml`
 2. Train (or load) a shared BPE tokenizer and save it to `tokenizers/`
-3. Train the model, printing a per-epoch table of train loss, val loss, and corpus BLEU
+3. Train the model, printing a per-epoch table of train loss, val loss, corpus BLEU and chrF (val loss is computed without label smoothing, so `exp(val_loss)` is the true perplexity)
 4. Save a checkpoint to `checkpoints/best.pt` whenever BLEU improves
 5. Save periodic checkpoints (e.g. `checkpoints/epoch_10.pt`) every `save_every` epochs
 6. Print sample translations from the best checkpoint at the end
@@ -216,10 +216,8 @@ Filtering pairs to max_src=20, max_tgt=20 …
 Model parameters: 8,057,664
 
 ──────────────────────────────────────────────────────────────────────
- Epoch  Train Loss   Val Loss     BLEU
+ Epoch  Train Loss   Val Loss     BLEU     chrF
 ──────────────────────────────────────────────────────────────────────
-     1     40.3244    11.4029     0.21 ←
-     2      8.4224     5.6589     0.34 ←
    ...
 ```
 
@@ -307,8 +305,8 @@ train.py
   └── TransformerLRScheduler    warmup then inverse-sqrt decay
   └── [epoch loop]
         └── train_one_epoch()   teacher-forcing forward pass → CrossEntropy loss → backprop
-        └── compute_val_loss()  same forward pass, no gradients
-        └── compute_bleu()      greedy-decode 500 val samples → sacrebleu corpus BLEU
+        └── compute_val_loss()  same forward pass, no gradients, no label smoothing
+        └── compute_metrics()   greedy-decode 2000 val samples → sacrebleu corpus BLEU + chrF
         └── save_checkpoint()   saves best BLEU and periodic checkpoints
 ```
 
@@ -327,7 +325,7 @@ greedy_decode(model, src, sos_idx, eos_idx, max_len, device)
 
 ### Inference (beam search)
 
-Same encoder pass, but the loop maintains the top-K candidate sequences ranked by cumulative log-probability, expanding each by `beam_width` tokens per step.
+Same encoder pass, but the loop maintains the top-K candidate sequences ranked by length-normalised log-probability (`score / len ** length_penalty`, default `0.6`), expanding each by `beam_width` tokens per step.
 
 ---
 
@@ -350,4 +348,5 @@ Tests cover masks, attention, encoder/decoder shapes, the LR scheduler, and toke
 | Use more data (`max_pairs`)                           | High               | `max_pairs`         |
 | Increase model size (`embed_dim`, `num_layers`)       | Medium (needs GPU) | `model_config.yaml` |
 | Use beam search at inference                          | Low–Medium         | `--mode beam`       |
+| Track chrF over BLEU for noisy romanised targets      | Metric only        | —                   |
 | Allow longer sentences (`max_src_len`, `max_tgt_len`) | Medium             | `data_config.yaml`  |
