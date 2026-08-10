@@ -46,12 +46,10 @@ def filter_by_length(src_list, tgt_list, tokenizer, max_src, max_tgt):
 
 
 def deduplicate_pairs(src_list, tgt_list, seed=42):
-    """Keep one randomly-chosen French translation per English sentence.
+    """Keep one randomly-chosen Hinglish translation per English sentence.
 
-    ManyThings maps the same EN sentence to many FR variants (formal/informal,
-    gendered, regional). Without deduplication, 57% of training pairs are
-    contradictory (same src, different tgt), which floors the loss at the
-    entropy of the target distribution and prevents convergence.
+    Contradictory pairs (same src, different tgt) floor the loss at the
+    entropy of the target distribution and prevent convergence.
     """
     from collections import defaultdict
     import random
@@ -160,7 +158,7 @@ def main():
     src_raw, tgt_raw = load_pairs(data_path, max_pairs)
     print(f"  Loaded {len(src_raw):,} pairs")
 
-    # Deduplicate: keep one FR translation per EN sentence
+    # Deduplicate: keep one Hinglish translation per English sentence
     src_raw, tgt_raw = deduplicate_pairs(src_raw, tgt_raw, seed=seed)
     print(f"  After deduplication: {len(src_raw):,} unique pairs")
 

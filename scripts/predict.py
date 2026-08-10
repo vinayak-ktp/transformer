@@ -89,7 +89,7 @@ def main():
     if args.sentence:
         result = translate(model, args.sentence, tokenizer, device, args.mode, args.beam_width, args.max_len)
         print(f"\n  EN: {args.sentence}")
-        print(f"  FR: {result}")
+        print(f"  Hinglish: {result}")
     else:
         print("\nInteractive mode — type a sentence and press Enter. Type 'exit' to quit.\n")
         while True:
@@ -104,7 +104,7 @@ def main():
                 print("Exiting.")
                 break
             result = translate(model, sentence, tokenizer, device, args.mode, args.beam_width, args.max_len)
-            print(f"FR > {result}\n\n")
+            print(f"HG > {result}\n\n")
 
 
 if __name__ == "__main__":

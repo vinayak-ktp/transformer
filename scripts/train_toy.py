@@ -31,11 +31,11 @@ def main():
     ]
 
     tgt_sentences = [
-        "j aime ai",
-        "comment allez vous",
-        "bonjour",
-        "merci",
-        "salut",
+        "mujhe ai pasand hai",
+        "aap kaise ho",
+        "suprabhat",
+        "dhanyavaad",
+        "namaste",
     ]
 
     src_tokenizer = train_sentencepiece_tokenizer(
