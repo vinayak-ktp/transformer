@@ -1,6 +1,6 @@
 # Transformer (from-scratch Implementation)
 
-A from-scratch PyTorch implementation of the Transformer architecture (_Attention Is All You Need_, Vaswani et al. 2017), trained on the [ManyThings](https://www.manythings.org/anki/) English–French dataset for sequence-to-sequence translation.
+A from-scratch PyTorch implementation of the Transformer architecture (_Attention Is All You Need_, Vaswani et al. 2017), trained on the [findnitai/english-to-hinglish](https://huggingface.co/datasets/findnitai/english-to-hinglish) dataset for English → Hinglish (romanised Hindi) translation.
 
 ---
 
@@ -14,11 +14,11 @@ transformer/
 │   └── train_config.yaml     # training hyperparameters
 │
 ├── data/
-│   └── manythings/
-│       └── fra.txt           # tab-separated EN↔FR sentence pairs
+│   └── hinglish/
+│       └── en_hinglish.tsv   # tab-separated EN↔Hinglish sentence pairs
 │
 ├── scripts/
-│   ├── download_data.py      # downloads the ManyThings EN-FR dataset
+│   ├── download_data.py      # downloads the EN-Hinglish dataset from HuggingFace
 │   ├── train.py              # main training script
 │   ├── train_toy.py          # minimal toy example (5 sentence pairs)
 │   └── predict.py            # CLI inference script
@@ -60,7 +60,9 @@ transformer/
 ├── tokenizers/                # saved SentencePiece model files (generated)
 ├── checkpoints/               # saved model checkpoints (generated)
 ├── tests/                     # unit tests
-└── requirements.txt
+├── pyproject.toml             # project dependencies (uv)
+├── uv.lock                    # locked dependency versions (uv)
+└── requirements.txt           # plain pip dependency list
 ```
 
 ---
@@ -118,13 +120,13 @@ flowchart TD
 ```bash
 git clone https://github.com/vinayak-ktp/transformer.git
 cd transformer
-python -m venv venv
-source venv/bin/activate
-python install.py
-python -m scripts.download_data   # downloads data/manythings/fra.txt (~170K EN<>FR pairs)
+uv sync --extra cpu               # or --extra cu121 for an NVIDIA GPU (CUDA 12.1)
+uv run scripts/download_data.py   # downloads data/hinglish/en_hinglish.tsv (~189K EN<>Hinglish pairs)
 ```
 
-**Requirements:** `torch`, `sentencepiece`, `sacrebleu`, `numpy`, `pyyaml`, `tqdm`, `pytest`
+Dependencies are managed with [uv](https://docs.astral.sh/uv/) via `pyproject.toml` and `uv.lock`. PyTorch is pulled from the matching PyTorch wheel index through the `cpu` / `cu121` extras (only one can be installed at a time).
+
+**Requirements:** `torch`, `sentencepiece`, `sacrebleu`, `datasets`, `numpy`, `pyyaml`, `tqdm`, `pytest`
 
 > `scripts/train.py` also calls the download automatically if the file is missing, so this step is optional.
 
@@ -137,28 +139,28 @@ All hyperparameters are controlled via three YAML files. Edit these before train
 ### `configs/data_config.yaml`
 
 ```yaml
-data_path: data/manythings/fra.txt # path to the tab-separated dataset
-max_pairs: 30000 # number of pairs to load from file
-max_src_len: 20 # max tokenised source length (filter)
-max_tgt_len: 20 # max tokenised target length (filter)
+data_path: data/hinglish/en_hinglish.tsv # path to the tab-separated dataset
+max_pairs: 189102 # number of pairs to load from file
+max_src_len: 50 # max tokenised source length (filter)
+max_tgt_len: 50 # max tokenised target length (filter)
 val_ratio: 0.1 # fraction of data held out for validation
 
 tokenizer: sentencepiece
 tokenizer_model_type: bpe
 tokenizer_vocab_size: 8000 # BPE vocabulary size
-tokenizer_prefix: tokenizers/fra_shared # where to save/load the tokenizer
+tokenizer_prefix: tokenizers/hinglish_shared_8k # where to save/load the tokenizer
 
-bleu_eval_samples: 2000 # val sentences decoded per epoch for BLEU / chrF
+bleu_eval_samples: 1000 # val sentences decoded per epoch for BLEU / chrF
 ```
 
 ### `configs/model_config.yaml`
 
 ```yaml
-embed_dim: 512 # embedding / model dimension
-num_heads: 8 # attention heads (must divide embed_dim)
-hidden_dim: 2048 # feed-forward inner dimension (typically 4× embed_dim)
-num_layers: 6 # number of encoder and decoder layers
-dropout: 0.1
+embed_dim: 384 # embedding / model dimension
+num_heads: 6 # attention heads (must divide embed_dim)
+hidden_dim: 1536 # feed-forward inner dimension (typically 4× embed_dim)
+num_layers: 4 # number of encoder and decoder layers
+dropout: 0.2
 max_len: 5000 # maximum positional encoding length
 ```
 
@@ -166,8 +168,8 @@ max_len: 5000 # maximum positional encoding length
 
 ```yaml
 batch_size: 64
-epochs: 50
-warmup_steps: 500 # LR warmup steps (keep small for small datasets)
+epochs: 30
+warmup_steps: 4000 # LR warmup steps
 scheduler_factor: 1.0 # scales the peak LR
 
 label_smoothing: 0.1
@@ -179,7 +181,7 @@ seed: 42
 device: cuda # falls back to cpu automatically if CUDA unavailable
 ```
 
-> **Warmup tip:** `warmup_steps` should be proportional to dataset size. For 27K training pairs at batch_size=64, ~422 steps/epoch — so `warmup_steps: 500` means peak LR is reached after roughly epoch 1, which is appropriate. The original paper's value of 4000 is designed for datasets 10× larger.
+> **Warmup tip:** `warmup_steps` should be proportional to dataset size. For ~150K training pairs at batch_size=64, ~2,400 steps/epoch — so `warmup_steps: 4000` means peak LR is reached in under 2 epochs. Scale it down if you train on a smaller subset (`max_pairs`).
 
 ---
 
@@ -188,7 +190,7 @@ device: cuda # falls back to cpu automatically if CUDA unavailable
 Run from the project root:
 
 ```bash
-python -m scripts.train
+uv run scripts/train.py
 ```
 
 The script will:
@@ -205,15 +207,16 @@ The script will:
 ```
 Using device: cpu
 
-Loading up to 30,000 pairs from data/manythings/fra.txt …
-  Loaded 30,000 pairs
-Found existing tokenizer at tokenizers/fra_shared.model, loading …
-  Tokenizer vocab size: 8,000
-Filtering pairs to max_src=20, max_tgt=20 …
-  Retained 30,000 pairs after filtering
-  Train: 27,000  |  Val: 3,000
+Loading up to 189,102 pairs from data/hinglish/en_hinglish.tsv …
+  Loaded … pairs
+  After deduplication: … unique pairs
+Found existing tokenizer at tokenizers/hinglish_shared.model, loading …
+  Tokenizer vocab size: …
+Filtering pairs to max_src=50, max_tgt=50 …
+  Retained … pairs after filtering
+  Train: …  |  Val: …
 
-Model parameters: 8,057,664
+Model parameters: …
 
 ──────────────────────────────────────────────────────────────────────
  Epoch  Train Loss   Val Loss     BLEU     chrF
@@ -226,7 +229,7 @@ Model parameters: 8,057,664
 A minimal script that trains on 5 hard-coded sentence pairs — useful for quickly verifying the pipeline works end-to-end:
 
 ```bash
-python -m scripts.train_toy
+uv run scripts/train_toy.py
 ```
 
 ### Test the architecture
@@ -234,7 +237,7 @@ python -m scripts.train_toy
 Testing all the components and the full Transformer architecture:
 
 ```bash
-python -m pytest tests
+uv run pytest tests
 ```
 
 ---
@@ -244,19 +247,19 @@ python -m pytest tests
 ### Single sentence
 
 ```bash
-python -m scripts.predict "How are you?"
+uv run scripts/predict.py "How are you?"
 ```
 
 ### Beam search decoding
 
 ```bash
-python -m scripts.predict "How are you?" --mode beam --beam-width 4
+uv run scripts/predict.py "How are you?" --mode beam --beam-width 4
 ```
 
 ### Specific checkpoint
 
 ```bash
-python -m scripts.predict "I love you." --checkpoint epoch_20
+uv run scripts/predict.py "I love you." --checkpoint epoch_20
 ```
 
 Checkpoints are resolved as `checkpoints/<name>.pt` automatically — no path or extension needed.
@@ -266,12 +269,12 @@ Checkpoints are resolved as `checkpoints/<name>.pt` automatically — no path or
 Omit the sentence argument to enter a REPL:
 
 ```bash
-python -m scripts.predict
+uv run scripts/predict.py
 
 # Interactive mode — type a sentence and press Enter. Type 'exit' to quit.
 #
-# EN > Good morning.
-# FR > Bonjour.
+# EN > How are you?
+# HG > aap kaise ho?
 #
 # EN > exit
 # Exiting.
@@ -295,7 +298,8 @@ python -m scripts.predict
 
 ```
 train.py
-  └── load_pairs()              reads fra.txt, tab-splits into EN / FR lists
+  └── load_pairs()              reads en_hinglish.tsv, tab-splits into EN / Hinglish lists
+  └── deduplicate_pairs()       keeps one Hinglish translation per English sentence
   └── filter_by_length()        drops pairs longer than max_src/tgt_len tokens
   └── train_val_split()         random 90/10 split
   └── train_sentencepiece_tokenizer()   trains shared BPE model on all sentences
@@ -306,7 +310,7 @@ train.py
   └── [epoch loop]
         └── train_one_epoch()   teacher-forcing forward pass → CrossEntropy loss → backprop
         └── compute_val_loss()  same forward pass, no gradients, no label smoothing
-        └── compute_metrics()   greedy-decode 2000 val samples → sacrebleu corpus BLEU + chrF
+        └── compute_metrics()   greedy-decode 1000 val samples → sacrebleu corpus BLEU + chrF
         └── save_checkpoint()   saves best BLEU and periodic checkpoints
 ```
 
@@ -332,7 +336,7 @@ Same encoder pass, but the loop maintains the top-K candidate sequences ranked b
 ## Tests
 
 ```bash
-python -m pytest tests
+uv run pytest tests
 ```
 
 Tests cover masks, attention, encoder/decoder shapes, the LR scheduler, and tokenizer behaviour.
