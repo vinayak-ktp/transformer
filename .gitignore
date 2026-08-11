@@ -1,6 +1,7 @@
 *venv
 *.un~
 __pycache__
+.idea/
 
 .pytest_cache/
 checkpoints/
