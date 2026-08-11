@@ -1,5 +1,5 @@
 batch_size: 64
-epochs: 50
+epochs: 30
 warmup_steps: 4000
 scheduler_factor: 1.0
 

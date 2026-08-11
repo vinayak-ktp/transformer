@@ -1,6 +1,6 @@
-embed_dim: 512
-num_heads: 8
-hidden_dim: 2048
-num_layers: 6
-dropout: 0.1
+embed_dim: 384
+num_heads: 6
+hidden_dim: 1536
+num_layers: 4
+dropout: 0.2
 max_len: 5000
